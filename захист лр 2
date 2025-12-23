@@ -1,0 +1,86 @@
+import pandas as pd
+import string
+
+date_of_birth = "14.10.2000"  
+surname = "Шевченко"         
+
+caesar_key = sum(int(ch) for ch in date_of_birth if ch.isdigit())
+
+vigenere_key = "Shevchenko".lower()
+
+print(f" Caesar key: {caesar_key}")
+print(f" Vigenère key: {vigenere_key}")
+
+def caesar_encrypt(text, shift):
+    alphabet = string.ascii_uppercase + string.ascii_lowercase
+    result = ""
+    for char in text:
+        if char in alphabet:
+            base = ord('A') if char.isupper() else ord('a')
+            offset = (ord(char) - base + shift) % 26
+            result += chr(base + offset)
+        else:
+            result += char
+    return result
+
+def caesar_decrypt(text, shift):
+    return caesar_encrypt(text, -shift)
+
+def vigenere_encrypt(text, key):
+    result = ""
+    key = key.lower()
+    key_length = len(key)
+    key_index = 0
+
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            shift = ord(key[key_index % key_length]) - ord('a')
+            offset = (ord(char) - base + shift) % 26
+            result += chr(base + offset)
+            key_index += 1
+        else:
+            result += char
+    return result
+
+def vigenere_decrypt(text, key):
+    result = ""
+    key = key.lower()
+    key_length = len(key)
+    key_index = 0
+
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            shift = ord(key[key_index % key_length]) - ord('a')
+            offset = (ord(char) - base - shift + 26) % 26
+            result += chr(base + offset)
+            key_index += 1
+        else:
+            result += char
+    return result
+
+text = "Захист інформації – важлива дисципліна"
+
+translit_text = "Zakhyst informatsii – vazhlyva dystsyplina"
+
+encrypted_caesar = caesar_encrypt(translit_text, caesar_key)
+decrypted_caesar = caesar_decrypt(encrypted_caesar, caesar_key)
+
+encrypted_vigenere = vigenere_encrypt(translit_text, vigenere_key)
+decrypted_vigenere = vigenere_decrypt(encrypted_vigenere, vigenere_key)
+
+comparison_df = pd.DataFrame({
+    "Метод": ["Цезарь", "Віженер"],
+    "Зашифрований текст": [encrypted_caesar, encrypted_vigenere],
+    "Довжина": [len(encrypted_caesar), len(encrypted_vigenere)],
+    "Ключ": [str(caesar_key), vigenere_key],
+    "Дешифрований текст": [decrypted_caesar, decrypted_vigenere]
+})
+
+comparison_df
+
+print(" Висновки:")
+print("- Шифр Цезаря дуже простий, ключ легко підібрати перебором.")
+print("- Шифр Віженера стійкіший до brute-force, оскільки використовує довший ключ.")
+print("- Обидва алгоритми не захищають від частотного аналізу.")
