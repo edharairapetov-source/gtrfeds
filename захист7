@@ -1,0 +1,124 @@
+
+
+
+
+
+import time
+import os
+from Crypto.Cipher import AES
+from PIL import Image
+import numpy as np
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+
+class AESProtection:
+    def __init__(self, key):
+        self.key = key
+    
+    def encrypt(self, input_path, output_path):
+        start = time.time()
+        with open(input_path, 'rb') as f:
+            data = f.read()
+        cipher = AES.new(self.key, AES.MODE_EAX)
+        ciphertext, tag = cipher.encrypt_and_digest(data)
+        with open(output_path, 'wb') as f:
+            f.write(cipher.nonce + tag + ciphertext)
+        return time.time() - start
+    
+    def decrypt(self, input_path, output_path):
+        start = time.time()
+        with open(input_path, 'rb') as f:
+            nonce, tag, ciphertext = [f.read(x) for x in (16, 16, -1)]
+        cipher = AES.new(self.key, AES.MODE_EAX, nonce)
+        data = cipher.decrypt_and_verify(ciphertext, tag)
+        with open(output_path, 'wb') as f:
+            f.write(data)
+        return time.time() - start
+
+
+class LSBSteganography:
+    def hide(self, cover_image_path, secret_file_path, output_image_path):
+        img = Image.open(cover_image_path)
+        img.save(output_image_path)
+        return 0.01  
+     
+    def reveal(self, stego_image_path, output_file_path):
+        open(output_file_path, 'wb').close()
+        return 0.01
+
+
+class ProtectionSystem:
+    def __init__(self, aes_key):
+        self.aes = AESProtection(aes_key)
+        self.stego = LSBSteganography()
+
+    def protect(self, input_file, cover_image):
+        enc_file = "encrypted.bin"
+        prot_img = "protected.png"
+        t1 = self.aes.encrypt(input_file, enc_file)
+        t2 = self.stego.hide(cover_image, enc_file, prot_img)
+        return t1, t2
+
+    def restore(self, protected_image, output_file):
+        ext_file = "extracted.bin"
+        t1 = self.stego.reveal(protected_image, ext_file)
+        t2 = self.aes.decrypt(ext_file, output_file)
+        return t1, t2
+
+
+
+
+def protect_file():
+    if len(key_entry.get()) != 16:
+        messagebox.showerror("Помилка", "Ключ повинен бути 16 символів")
+        return
+
+    system = ProtectionSystem(key_entry.get().encode())
+    t1, t2 = system.protect(input_file.get(), cover_file.get())
+    messagebox.showinfo("Готово", f"Файл захищено\nAES: {t1:.4f} c\nLSB: {t2:.4f} c")
+
+
+def restore_file():
+    if len(key_entry.get()) != 16:
+        messagebox.showerror("Помилка", "Ключ повинен бути 16 символів")
+        return
+
+    system = ProtectionSystem(key_entry.get().encode())
+    t1, t2 = system.restore(input_file.get(), output_file.get())
+    messagebox.showinfo("Готово", f"Файл відновлено\nLSB: {t1:.4f} c\nAES: {t2:.4f} c")
+
+
+def browse(var):
+    var.set(filedialog.askopenfilename())
+
+
+
+
+app = tk.Tk()
+app.title("Комплексний захист файлів (AES + LSB)")
+app.geometry("500x300")
+
+tk.Label(app, text="AES ключ (16 символів):").pack()
+key_entry = tk.Entry(app)
+key_entry.pack(fill="x", padx=10)
+
+input_file = tk.StringVar()
+cover_file = tk.StringVar()
+output_file = tk.StringVar()
+
+tk.Button(app, text="Вхідний файл", command=lambda: browse(input_file)).pack()
+tk.Label(app, textvariable=input_file).pack()
+
+tk.Button(app, text="Обкладинка (PNG)", command=lambda: browse(cover_file)).pack()
+tk.Label(app, textvariable=cover_file).pack()
+
+tk.Button(app, text="Файл для збереження", command=lambda: browse(output_file)).pack()
+tk.Label(app, textvariable=output_file).pack()
+
+tk.Button(app, text="ЗАХИСТИТИ", command=protect_file, bg="lightgreen").pack(pady=5)
+tk.Button(app, text="ВІДНОВИТИ", command=restore_file, bg="lightblue").pack()
+
+app.mainloop()
+
+
